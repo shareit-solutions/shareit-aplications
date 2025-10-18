@@ -28,6 +28,8 @@ spec:
           mountPath: /prometheus
       volumes:
       - name: config
-        emptyDir: {}
+        configMap:
+          name: prometheus-config
       - name: storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: prometheus-storage

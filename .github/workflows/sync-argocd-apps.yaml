@@ -1,0 +1,55 @@
+name: Sync ArgoCD Applications
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'orgs/**/app.yaml'
+  workflow_dispatch:
+
+jobs:
+  sync-apps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/argocd
+
+      - name: Login to ArgoCD
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd login $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN --insecure
+
+      - name: Create/Update ArgoCD Applications
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          # Encontrar todos os arquivos app.yaml
+          find orgs -name "app.yaml" -type f | while read -r app_file; do
+            echo "Processing: $app_file"
+            
+            # Extrair informações do caminho
+            org=$(echo "$app_file" | cut -d'/' -f2)
+            app=$(echo "$app_file" | cut -d'/' -f3)
+            
+            echo "Organization: $org"
+            echo "Application: $app"
+            
+            # Aplicar a aplicação no ArgoCD
+            argocd app create -f "$app_file" --upsert
+            
+            echo "---"
+          done
+
+      - name: List all ArgoCD Applications
+        run: |
+          argocd app list
