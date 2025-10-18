@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: tools
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure  # Descomente para HTTPS
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"  # Descomente se usar cert-manager
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: prometheus.shareit.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 80
+  # tls:  # Descomente se quiser HTTPS
+  #   - secretName: prometheus-tls
+  #     hosts:
+  #       - prometheus.shareit.com
